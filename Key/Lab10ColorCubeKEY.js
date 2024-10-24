@@ -114,16 +114,17 @@ function generateQuad(a, b, c, d) {
 }
 
 function constructAxes() {
-    var axisVertices = [
-        // X axis
-        vec4(-1.0, 0.0, 0.0, 1.0),
-        vec4(1.0, 0.0, 0.0, 1.0),
-        // Y axis
-        vec4(0.0, -1.0, 0.0, 1.0),
-        vec4(0.0, 1.0, 0.0, 1.0),
-        // Z axis
-        vec4(0.0, 0.0, -1.0, 1.0),
-        vec4(0.0, 0.0, 1.0, 1.0)
+    // Extend the axes
+    var extendedAxisVertices = [
+        // X axis extended
+        vec4(-2.0, 0.0, 0.0, 1.0),
+        vec4(2.0, 0.0, 0.0, 1.0),
+        // Y axis extended
+        vec4(0.0, -2.0, 0.0, 1.0),
+        vec4(0.0, 2.0, 0.0, 1.0),
+        // Z axis extended
+        vec4(0.0, 0.0, -2.0, 1.0),
+        vec4(0.0, 0.0, 2.0, 1.0)
     ];
 
     var axisColors = [
@@ -135,8 +136,8 @@ function constructAxes() {
         vec4(0.0, 0.0, 1.0, 1.0)
     ];
 
-    for (var i = 0; i < axisVertices.length; i++) {
-        vertexPositions.push(axisVertices[i]);
+    for (var i = 0; i < extendedAxisVertices.length; i++) {
+        vertexPositions.push(extendedAxisVertices[i]);
         vertexColors.push(axisColors[i]);
     }
 }
