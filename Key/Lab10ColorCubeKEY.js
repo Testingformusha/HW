@@ -1,158 +1,156 @@
 "use strict";
 
-var canvasElement;
-var glContext;
+var canvas;
+var gl;
 
-var numPositions = 36;
+var numPositions  = 36;
 
 var positions = [];
 var colors = [];
 
-var xaxis = 0;
-var yaxis = 1;
-var zaxis = 2;
+var xAxis = 0;
+var yAxis = 1;
+var zAxis = 2;
 
 var axis = 0;
 var theta = [0, 0, 0];
-var isRotating = true;
 
-var angleLocation;
+var thetaLoc;
 
-initialize();
+var flag = false;
 
-function initialize() {
-    canvasElement = document.getElementById("gl-canvas");
+init();
 
-    glContext = canvasElement.getContext('webgl2');
-    if (!glContext) alert("WebGL 2.0 isn't available");
+function init()
+{
+    canvas = document.getElementById("gl-canvas");
 
-    createCubeColors();
-    constructAxes();
+    gl = canvas.getContext('webgl2');
+    if (!gl) alert("WebGL 2.0 isn't available");
 
-    glContext.viewport(0, 0, canvasElement.width, canvasElement.height);
-    glContext.clearColor(1.0, 1.0, 1.0, 1.0);
+    colorCube();
+    //add the vertices for the axes
+    positions.push( vec4(0.0,0.0,0.0,1.0) );
+    colors.push( vec4(1.0,0.0,0.0,1.0) );
+    positions.push( vec4(1.0,0.0,0.0,1.0) );
+    colors.push( vec4(1.0,0.0,0.0,1.0) );
+    positions.push( vec4(0.0,0.0,0.0,1.0) );
+    colors.push( vec4(0.0,1.0,0.0,1.0) );
+    positions.push( vec4(0.0,1.0,0.0,1.0) );
+    colors.push( vec4(0.0,1.0,0.0,1.0) );
+    positions.push( vec4(0.0,0.0,0.0,1.0) );
+    colors.push( vec4(0.0,0.0,1.0,1.0) );
+    positions.push( vec4(0.0,0.0,1.0,1.0) );
+    colors.push( vec4(0.0,0.0,1.0,1.0) );
 
-    glContext.enable(glContext.DEPTH_TEST);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
-    // Load shaders and initialize attribute buffers
-    var shaderProgram = initShaders(glContext, "vertex-shader", "fragment-shader");
-    glContext.useProgram(shaderProgram);
+    gl.enable(gl.DEPTH_TEST);
 
-    var colorBuffer = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(vertexColors), gl.STATIC_DRAW);
+    //
+    //  Load shaders and initialize attribute buffers
+    //
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
 
-    var colorAttributeLocation = glContext.getAttribLocation(shaderProgram, "aColor");
-    glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(colorAttributeLocation);
+    var cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
 
-    var vertexBuffer = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(vertexPositions), gl.STATIC_DRAW);
+    var colorLoc = gl.getAttribLocation( program, "aColor" );
+    gl.vertexAttribPointer( colorLoc, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( colorLoc );
 
-    var positionAttributeLocation = glContext.getAttribLocation(shaderProgram, "aPosition");
-    glContext.vertexAttribPointer(positionAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(positionAttributeLocation);
+    var vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(positions), gl.STATIC_DRAW);
 
-    angleLocation = glContext.getUniformLocation(shaderProgram, "uTheta");
 
-    // Event listeners for buttons
-    document.getElementById("xButton").onclick = function () {
-        currentAxis = axisX;
+    var positionLoc = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLoc);
+
+    thetaLoc = gl.getUniformLocation(program, "uTheta");
+
+    //event listeners for buttons
+
+    document.getElementById( "xButton" ).onclick = function () {
+        axis = xAxis;
     };
-    document.getElementById("yButton").onclick = function () {
-        currentAxis = axisY;
+    document.getElementById( "yButton" ).onclick = function () {
+        axis = yAxis;
     };
-    document.getElementById("zButton").onclick = function () {
-        currentAxis = axisZ;
+    document.getElementById( "zButton" ).onclick = function () {
+        axis = zAxis;
     };
-    document.getElementById("toggleButton").onclick = function () {
-        isRotating = !isRotating;
-    };
+    document.getElementById("ButtonT").onclick = function(){flag = !flag;};
 
-    draw();
+    render();
 }
 
-function createCubeColors() {
-    generateQuad(1, 0, 3, 2);
-    generateQuad(2, 3, 7, 6);
-    generateQuad(3, 0, 4, 7);
-    generateQuad(6, 5, 1, 2);
-    generateQuad(4, 5, 6, 7);
-    generateQuad(5, 4, 0, 1);
+function colorCube()
+{
+    quad(1, 0, 3, 2);
+    quad(2, 3, 7, 6);
+    quad(3, 0, 4, 7);
+    quad(6, 5, 1, 2);
+    quad(4, 5, 6, 7);
+    quad(5, 4, 0, 1);
 }
 
-function generateQuad(a, b, c, d) {
-    var cubeVertices = [
-        vec4(-0.5, -0.5, 0.5, 1.0),
-        vec4(-0.5, 0.5, 0.5, 1.0),
-        vec4(0.5, 0.5, 0.5, 1.0),
-        vec4(0.5, -0.5, 0.5, 1.0),
+function quad(a, b, c, d)
+{
+    var vertices = [
+        vec4(-0.5, -0.5,  0.5, 1.0),
+        vec4(-0.5,  0.5,  0.5, 1.0),
+        vec4(0.5,  0.5,  0.5, 1.0),
+        vec4(0.5, -0.5,  0.5, 1.0),
         vec4(-0.5, -0.5, -0.5, 1.0),
-        vec4(-0.5, 0.5, -0.5, 1.0),
-        vec4(0.5, 0.5, -0.5, 1.0),
+        vec4(-0.5,  0.5, -0.5, 1.0),
+        vec4(0.5,  0.5, -0.5, 1.0),
         vec4(0.5, -0.5, -0.5, 1.0)
     ];
 
-    var colorPalette = [
+    var vertexColors = [
         vec4(0.0, 0.0, 0.0, 1.0),  // black
-        vec4(0.8, 0.1, 0.1, 1.0),  // dark red
-        vec4(1.0, 0.8, 0.0, 1.0),  // bright yellow
-        vec4(0.0, 0.8, 0.0, 1.0),  // bright green
-        vec4(0.1, 0.1, 0.8, 1.0),  // dark blue
-        vec4(0.8, 0.1, 0.8, 1.0),  // dark magenta
-        vec4(0.8, 0.8, 0.8, 1.0),  // light gray
-        vec4(0.0, 0.8, 0.8, 1.0)   // bright cyan
+        vec4(1.0, 0.0, 0.0, 1.0),  // red
+        vec4(1.0, 1.0, 0.0, 1.0),  // yellow
+        vec4(0.0, 1.0, 0.0, 1.0),  // green
+        vec4(0.0, 0.0, 1.0, 1.0),  // blue
+        vec4(1.0, 0.0, 1.0, 1.0),  // magenta
+        vec4(1.0, 1.0, 1.0, 1.0),  // white
+        vec4(0.0, 1.0, 1.0, 1.0)   // cyan
     ];
+
+    // We need to parition the quad into two triangles in order for
+    // WebGL to be able to render it.  In this case, we create two
+    // triangles from the quad indices
+
+    //vertex color assigned by the index of the vertex
 
     var indices = [a, b, c, a, c, d];
 
-    for (var i = 0; i < indices.length; ++i) {
-        vertexPositions.push(cubeVertices[indices[i]]);
-        vertexColors.push(colorPalette[indices[i]]);
+    for ( var i = 0; i < indices.length; ++i ) {
+        positions.push( vertices[indices[i]] );
+        colors.push( vertexColors[indices[i]] );
+
+        // for solid colored faces use
+        //colors.push(vertexColors[a]);
     }
 }
 
-function constructAxes() {
-    var axisVertices = [
-        // X axis
-        vec4(-1.0, 0.0, 0.0, 1.0),
-        vec4(1.0, 0.0, 0.0, 1.0),
-        // Y axis
-        vec4(0.0, -1.0, 0.0, 1.0),
-        vec4(0.0, 1.0, 0.0, 1.0),
-        // Z axis
-        vec4(0.0, 0.0, -1.0, 1.0),
-        vec4(0.0, 0.0, 1.0, 1.0)
-    ];
+function render()
+{
+    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    var axisColors = [
-        vec4(1.0, 0.0, 0.0, 1.0),  // X axis - red
-        vec4(1.0, 0.0, 0.0, 1.0),
-        vec4(0.0, 1.0, 0.0, 1.0),  // Y axis - green
-        vec4(0.0, 1.0, 0.0, 1.0),
-        vec4(0.0, 0.0, 1.0, 1.0),  // Z axis - blue
-        vec4(0.0, 0.0, 1.0, 1.0)
-    ];
+    if(flag) theta[axis] += 2.0;
+    gl.uniform3fv(thetaLoc, theta);
 
-    for (var i = 0; i < axisVertices.length; i++) {
-        vertexPositions.push(axisVertices[i]);
-        vertexColors.push(axisColors[i]);
-    }
-}
+    // render the cube
+    gl.drawArrays(gl.TRIANGLES, 0, numPositions);
+    // now, render the axes
+    gl.drawArrays(gl.LINES, numPositions, 6);
 
-function draw() {
-    glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
-
-    if (isRotating) {
-        rotationAngles[currentAxis] += 2.0;
-    }
-    glContext.uniform3fv(angleLocation, rotationAngles);
-
-    // Render the cube
-    glContext.drawArrays(glContext.TRIANGLES, 0, totalVertices);
-    // Now render the axes
-    glContext.drawArrays(glContext.LINES, totalVertices, 6);
-
-    requestAnimationFrame(draw);
+    requestAnimationFrame(render);
 }
