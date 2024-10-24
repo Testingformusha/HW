@@ -21,27 +21,51 @@ var flag = false;
 
 init();
 
-function init()
-{
+function init() {
     canvas = document.getElementById("gl-canvas");
 
     gl = canvas.getContext('webgl2');
     if (!gl) alert("WebGL 2.0 isn't available");
 
     colorCube();
-    //add the vertices for the axes
-    positions.push( vec4(0.0,0.0,0.0,1.0) );
-    colors.push( vec4(1.0,0.0,0.0,1.0) );
-    positions.push( vec4(1.0,0.0,0.0,1.0) );
-    colors.push( vec4(1.0,0.0,0.0,1.0) );
-    positions.push( vec4(0.0,0.0,0.0,1.0) );
-    colors.push( vec4(0.0,1.0,0.0,1.0) );
-    positions.push( vec4(0.0,1.0,0.0,1.0) );
-    colors.push( vec4(0.0,1.0,0.0,1.0) );
-    positions.push( vec4(0.0,0.0,0.0,1.0) );
-    colors.push( vec4(0.0,0.0,1.0,1.0) );
-    positions.push( vec4(0.0,0.0,1.0,1.0) );
-    colors.push( vec4(0.0,0.0,1.0,1.0) );
+
+    // Add the vertices for the axes
+    // X-axis (Red)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(1.0, 0.0, 0.0, 1.0));
+    positions.push(vec4(1.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(1.0, 0.0, 0.0, 1.0));
+    
+    // Y-axis (Green)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 1.0, 0.0, 1.0));
+    positions.push(vec4(0.0, 1.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 1.0, 0.0, 1.0));
+    
+    // Z-axis (Blue)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 0.0, 1.0, 1.0));
+    positions.push(vec4(0.0, 0.0, 1.0, 1.0));
+    colors.push(vec4(0.0, 0.0, 1.0, 1.0));
+    
+    // Add the negative axes
+    // X-axis (Red)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(1.0, 0.0, 0.0, 1.0));
+    positions.push(vec4(-1.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(1.0, 0.0, 0.0, 1.0));
+    
+    // Y-axis (Green)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 1.0, 0.0, 1.0));
+    positions.push(vec4(0.0, -1.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 1.0, 0.0, 1.0));
+    
+    // Z-axis (Blue)
+    positions.push(vec4(0.0, 0.0, 0.0, 1.0));
+    colors.push(vec4(0.0, 0.0, 1.0, 1.0));
+    positions.push(vec4(0.0, 0.0, -1.0, 1.0));
+    colors.push(vec4(0.0, 0.0, 1.0, 1.0));
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
@@ -58,14 +82,13 @@ function init()
     gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
 
-    var colorLoc = gl.getAttribLocation( program, "aColor" );
-    gl.vertexAttribPointer( colorLoc, 4, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( colorLoc );
+    var colorLoc = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
 
     var vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(positions), gl.STATIC_DRAW);
-
 
     var positionLoc = gl.getAttribLocation(program, "aPosition");
     gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
@@ -73,24 +96,22 @@ function init()
 
     thetaLoc = gl.getUniformLocation(program, "uTheta");
 
-    //event listeners for buttons
-
-    document.getElementById( "xButton" ).onclick = function () {
+    // Event listeners for buttons
+    document.getElementById("xButton").onclick = function () {
         axis = xAxis;
     };
-    document.getElementById( "yButton" ).onclick = function () {
+    document.getElementById("yButton").onclick = function () {
         axis = yAxis;
     };
-    document.getElementById( "zButton" ).onclick = function () {
+    document.getElementById("zButton").onclick = function () {
         axis = zAxis;
     };
-    document.getElementById("ButtonT").onclick = function(){flag = !flag;};
+    document.getElementById("ButtonT").onclick = function () { flag = !flag; };
 
     render();
 }
 
-function colorCube()
-{
+function colorCube() {
     quad(1, 0, 3, 2);
     quad(2, 3, 7, 6);
     quad(3, 0, 4, 7);
@@ -99,8 +120,7 @@ function colorCube()
     quad(5, 4, 0, 1);
 }
 
-function quad(a, b, c, d)
-{
+function quad(a, b, c, d) {
     var vertices = [
         vec4(-0.5, -0.5,  0.5, 1.0),
         vec4(-0.5,  0.5,  0.5, 1.0),
@@ -123,34 +143,25 @@ function quad(a, b, c, d)
         vec4(0.0, 1.0, 1.0, 1.0)   // cyan
     ];
 
-    // We need to parition the quad into two triangles in order for
-    // WebGL to be able to render it.  In this case, we create two
-    // triangles from the quad indices
-
-    //vertex color assigned by the index of the vertex
-
     var indices = [a, b, c, a, c, d];
 
-    for ( var i = 0; i < indices.length; ++i ) {
-        positions.push( vertices[indices[i]] );
-        colors.push( vertexColors[indices[i]] );
-
-        // for solid colored faces use
-        //colors.push(vertexColors[a]);
+    for (var i = 0; i < indices.length; ++i) {
+        positions.push(vertices[indices[i]]);
+        colors.push(vertexColors[indices[i]]);
     }
 }
 
-function render()
-{
-    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+function render() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if(flag) theta[axis] += 2.0;
+    if (flag) theta[axis] += 2.0;
     gl.uniform3fv(thetaLoc, theta);
 
-    // render the cube
+    // Render the cube
     gl.drawArrays(gl.TRIANGLES, 0, numPositions);
-    // now, render the axes
-    gl.drawArrays(gl.LINES, numPositions, 6);
+    
+    // Now, render the axes
+    gl.drawArrays(gl.LINES, numPositions, 12); // Adjusted to render all axes (6 vertices for 3 axes)
 
     requestAnimationFrame(render);
 }
