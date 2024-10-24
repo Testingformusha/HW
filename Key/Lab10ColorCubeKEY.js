@@ -12,8 +12,8 @@ var xaxis = 0;
 var yaxis = 1;
 var zaxis = 2;
 
-var currentAxis = 0;
-var rotationAngles = [0, 0, 0];
+var axis = 0;
+var theta = [0, 0, 0];
 var isRotating = true;
 
 var angleLocation;
