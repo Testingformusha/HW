@@ -3,10 +3,10 @@
 var canvasElement;
 var glContext;
 
-var totalVertices = 36;
+var numPositions = 36;
 
-var vertexPositions = [];
-var vertexColors = [];
+var positions = [];
+var colors = [];
 
 var axisX = 0;
 var axisY = 1;
