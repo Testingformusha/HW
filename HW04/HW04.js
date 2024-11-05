@@ -109,23 +109,19 @@ function init() {
     gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(colorLoc);
 
-    document.getElementById('rotateXButton').style.backgroundColor = 'red';
-    document.getElementById('rotateYButton').style.backgroundColor = 'red';
-    document.getElementById('rotateZButton').style.backgroundColor = 'red';
-
     document.getElementById('rotateXButton').addEventListener("click", function () {
         isRotateX = !isRotateX;
-        this.style.backgroundColor = isRotateX ? 'green' : 'red';
+        this.style.backgroundColor = isRotateX ? 'blue' : 'red';
     });
     
     document.getElementById('rotateYButton').addEventListener("click", function () {
         isRotateY = !isRotateY;
-        this.style.backgroundColor = isRotateY ? 'green' : 'red';
+        this.style.backgroundColor = isRotateY ? 'blue' : 'red';
     });
     
     document.getElementById('rotateZButton').addEventListener("click", function () {
         isRotateZ = !isRotateZ;
-        this.style.backgroundColor = isRotateZ ? 'green' : 'red';
+        this.style.backgroundColor = isRotateZ ? 'blue' : 'red';
     });
     
 
