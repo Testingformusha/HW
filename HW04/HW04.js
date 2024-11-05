@@ -1,146 +1,179 @@
 "use strict";
 
-var gl;
-var program;
-var t = 0.0;
-var morphing = false;
-var intervalId;
-var direction = 1;
-var angleY = 0;
-var angleX = 0;
-var angleZ = 0;
+let gl;
+let shaderProgram;
+let morphFactor = 0.0;
+let isMorphing = false;
+let morphInterval;
+let rotationDirection = 1;
+let rotateY = 0;
+let rotateX = 0;
+let rotateZ = 0;
 
-var isRotateX = false;
-var isRotateY = false;
-var isRotateZ = false;
+let rotateXEnabled = false;
+let rotateYEnabled = false;
+let rotateZEnabled = false;
 
-var buffer1, buffer2;
+let vertexBufferA, vertexBufferB;
 
-init();
+initialize();
 
-function init() {
-    var canvas = document.getElementById("gl-canvas");
+function initialize() {
+    const canvas = document.getElementById("gl-canvas");
     gl = canvas.getContext('webgl2');
     if (!gl) {
         alert("WebGL isn't available");
+        return;
     }
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.clearColor(0.8, 0.8, 0.8, 1.0);
     gl.enable(gl.DEPTH_TEST);
 
-    program = initShaders(gl, "vertex-shader", "fragment-shader");
-    gl.useProgram(program);
+    shaderProgram = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(shaderProgram);
 
-    var cube1 = [
-        vec4(-0.5, -0.5, -0.5, 1.0),
-        vec4(-0.5, -0.5,  0.5, 1.0),
-        vec4(-0.5,  0.5,  0.5, 1.0),
-        vec4(-0.5,  0.5, -0.5, 1.0),
-        vec4( 0.5, -0.5, -0.5, 1.0),
-        vec4( 0.5, -0.5,  0.5, 1.0),
-        vec4( 0.5,  0.5,  0.5, 1.0),
-        vec4( 0.5,  0.5, -0.5, 1.0)
+    const shapeA = [
+        vec4(-0.6, -0.6, -0.6, 1.0),
+        vec4(-0.6, -0.6,  0.6, 1.0),
+        vec4(-0.6,  0.6,  0.6, 1.0),
+        vec4(-0.6,  0.6, -0.6, 1.0),
+        vec4( 0.6, -0.6, -0.6, 1.0),
+        vec4( 0.6, -0.6,  0.6, 1.0),
+        vec4( 0.6,  0.6,  0.6, 1.0),
+        vec4( 0.6,  0.6, -0.6, 1.0)
     ];
 
-    var cube2 = [
-        vec4(-0.25, -0.25, -0.25, 1.0),
-        vec4(-0.25, -0.25,  0.25, 1.0),
-        vec4(-0.25,  0.25,  0.25, 1.0),
-        vec4(-0.25,  0.25, -0.25, 1.0),
-        vec4( 0.25, -0.25, -0.25, 1.0),
-        vec4( 0.25, -0.25,  0.25, 1.0),
-        vec4( 0.25,  0.25,  0.25, 1.0),
-        vec4( 0.25,  0.25, -0.25, 1.0)
+    const shapeB = [
+        vec4(-0.3, -0.3, -0.3, 1.0),
+        vec4(-0.3, -0.3,  0.3, 1.0),
+        vec4(-0.3,  0.3,  0.3, 1.0),
+        vec4(-0.3,  0.3, -0.3, 1.0),
+        vec4( 0.3, -0.3, -0.3, 1.0),
+        vec4( 0.3, -0.3,  0.3, 1.0),
+        vec4( 0.3,  0.3,  0.3, 1.0),
+        vec4( 0.3,  0.3, -0.3, 1.0)
     ];
 
-    buffer1 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer1);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube1), gl.STATIC_DRAW);
+    vertexBufferA = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferA);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(shapeA), gl.STATIC_DRAW);
 
-    buffer2 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer2);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube2), gl.STATIC_DRAW);
+    vertexBufferB = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferB);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(shapeB), gl.STATIC_DRAW);
 
-    var colors = [
-        vec4(1.0, 0.0, 0.0, 1.0),
-        vec4(0.0, 1.0, 0.0, 1.0),
-        vec4(0.0, 0.0, 1.0, 1.0),
-        vec4(1.0, 1.0, 0.0, 1.0),
-        vec4(0.0, 1.0, 1.0, 1.0),
-        vec4(1.0, 0.0, 1.0, 1.0),
-        vec4(0.5, 0.5, 0.5, 1.0),
-        vec4(1.0, 0.5, 0.0, 1.0)
+    const colorArrayA = [
+        vec4(0.9, 0.1, 0.1, 1.0),
+        vec4(0.1, 0.9, 0.1, 1.0),
+        vec4(0.1, 0.1, 0.9, 1.0),
+        vec4(0.9, 0.9, 0.1, 1.0),
+        vec4(0.1, 0.9, 0.9, 1.0),
+        vec4(0.9, 0.1, 0.9, 1.0),
+        vec4(0.7, 0.7, 0.7, 1.0),
+        vec4(0.9, 0.5, 0.0, 1.0)
     ];
 
-    var colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+    const colorArrayB = [
+        vec4(0.3, 0.0, 0.0, 1.0),
+        vec4(0.0, 0.3, 0.0, 1.0),
+        vec4(0.0, 0.0, 0.3, 1.0),
+        vec4(0.3, 0.3, 0.0, 1.0),
+        vec4(0.0, 0.3, 0.3, 1.0),
+        vec4(0.3, 0.0, 0.3, 1.0),
+        vec4(0.2, 0.2, 0.2, 1.0),
+        vec4(0.3, 0.3, 0.0, 1.0)
+    ];
 
-    var colorLoc = gl.getAttribLocation(program, "aColor");
-    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(colorLoc);
+    const colorBufferA = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferA);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorArrayA), gl.STATIC_DRAW);
+
+    const colorBufferB = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferB);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorArrayB), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferA);
+    const colorLocation = gl.getAttribLocation(shaderProgram, "aColor");
+    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLocation);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferB);
+    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLocation);
+
+    initializeButtonHandlers();
+
+    render();
+}
+
+function initializeButtonHandlers() {
+    document.getElementById('rotateXButton').style.backgroundColor = 'orange';
+    document.getElementById('rotateYButton').style.backgroundColor = 'orange';
+    document.getElementById('rotateZButton').style.backgroundColor = 'orange';
 
     document.getElementById('rotateXButton').addEventListener("click", function () {
-        isRotateX = !isRotateX;
-        this.style.backgroundColor = isRotateX ? 'green' : 'red';
+        rotateXEnabled = !rotateXEnabled;
+        this.style.backgroundColor = rotateXEnabled ? 'lightgreen' : 'orange';
     });
 
     document.getElementById('rotateYButton').addEventListener("click", function () {
-        isRotateY = !isRotateY;
-        this.style.backgroundColor = isRotateY ? 'green' : 'red';
+        rotateYEnabled = !rotateYEnabled;
+        this.style.backgroundColor = rotateYEnabled ? 'lightgreen' : 'orange';
     });
 
     document.getElementById('rotateZButton').addEventListener("click", function () {
-        isRotateZ = !isRotateZ;
-        this.style.backgroundColor = isRotateZ ? 'green' : 'red';
+        rotateZEnabled = !rotateZEnabled;
+        this.style.backgroundColor = rotateZEnabled ? 'lightgreen' : 'orange';
     });
 
     document.getElementById('toggle').addEventListener("click", function () {
-        if (morphing) {
-            clearInterval(intervalId);
+        if (isMorphing) {
+            clearInterval(morphInterval);
         } else {
-            intervalId = setInterval(() => {
-                t += direction * 0.015;
-                angleY += isRotateY ? 2 : 0; // rotation Y
-                angleX += isRotateX ? 1 : 0; // rotation X
-                angleZ += isRotateZ ? 1 : 0; // rotation Z
-                if (t >= 1.0 || t <= 0.0) {
-                    direction *= -1;
+            morphInterval = setInterval(() => {
+                morphFactor += rotationDirection * 0.02;
+                rotateY += rotateYEnabled ? 2 : 0; // rotation Y
+                rotateX += rotateXEnabled ? 1 : 0; // rotation X
+                rotateZ += rotateZEnabled ? 1 : 0; // rotation Z
+
+                if (morphFactor >= 1.0 || morphFactor <= 0.0) {
+                    rotationDirection *= -1;
                 }
                 render();
             }, 100);
         }
-        morphing = !morphing;
+        isMorphing = !isMorphing;
     });
-
-    render();
 }
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    var modelViewMatrix = mat4();
-    modelViewMatrix = mult(modelViewMatrix, rotateY(angleY)); // Rotate Y
-    modelViewMatrix = mult(modelViewMatrix, rotateX(angleX)); // Rotate X
-    modelViewMatrix = mult(modelViewMatrix, rotateZ(angleZ)); // Rotate Z
+    let modelViewMatrix = mat4();
+    modelViewMatrix = mult(modelViewMatrix, rotateY(rotateY)); // Rotate Y
+    modelViewMatrix = mult(modelViewMatrix, rotateX(rotateX)); // Rotate X
+    modelViewMatrix = mult(modelViewMatrix, rotateZ(rotateZ)); // Rotate Z
 
-    var modelViewLoc = gl.getUniformLocation(program, "uModelViewMatrix");
-    gl.uniformMatrix4fv(modelViewLoc, false, flatten(modelViewMatrix));
+    const modelViewLocation = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
+    gl.uniformMatrix4fv(modelViewLocation, false, flatten(modelViewMatrix));
 
-    var morphLoc = gl.getUniformLocation(program, "uMorph");
-    gl.uniform1f(morphLoc, t);
+    const morphLocation = gl.getUniformLocation(shaderProgram, "uMorph");
+    gl.uniform1f(morphLocation, morphFactor);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer1);
-    var positionLoc1 = gl.getAttribLocation(program, "aPosition1");
-    gl.vertexAttribPointer(positionLoc1, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(positionLoc1);
+    const colorBlend = vec4(1.0 * morphFactor, 0.0, 1.0 * (1.0 - morphFactor), 1.0);
+    const colorUniformLocation = gl.getUniformLocation(shaderProgram, "uColor");
+    gl.uniform4fv(colorUniformLocation, flatten(colorBlend));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer2);
-    var positionLoc2 = gl.getAttribLocation(program, "aPosition2");
-    gl.vertexAttribPointer(positionLoc2, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(positionLoc2);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferA);
+    const positionLocationA = gl.getAttribLocation(shaderProgram, "aPosition1");
+    gl.vertexAttribPointer(positionLocationA, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLocationA);
 
-    drawCube();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferB);
+    const positionLocationB = gl.getAttribLocation(shaderProgram, "aPosition2");
+    gl.vertexAttribPointer(positionLocationB, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLocationB);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    requestAnimationFrame(render);
 }
-
-function drawCube
