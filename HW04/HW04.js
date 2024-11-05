@@ -1,146 +1,199 @@
 "use strict";
 
-let glContext;
-let shaderProg;
-let morphValue = 0.0;
-let angleY = 0;
-let angleX = 0;
-let angleZ = 0;
+var gl;
+var program;
+var t = 0.0;
+var morphing = false;
+var intervalId;
+var direction = 1;
+var angleY = 0;
+var angleX = 0;
+var angleZ = 0;
 
-let vertexBuffer1, vertexBuffer2;
-let colorBuffer1, colorBuffer2;
+var isRotateX = false;
+var isRotateY = false;
+var isRotateZ = false;
+
+var buffer1, buffer2;
 
 init();
 
 function init() {
-    const canvasElement = document.getElementById("gl-canvas");
-    glContext = canvasElement.getContext('webgl2');
-    if (!glContext) {
-        alert("Unable to initialize WebGL");
-        return;
+    var canvas = document.getElementById("gl-canvas");
+    gl = canvas.getContext('webgl2');
+    if (!gl) {
+        alert("WebGL isn't available");
     }
-    glContext.viewport(0, 0, canvasElement.width, canvasElement.height);
-    glContext.clearColor(0.8, 0.8, 0.8, 1.0);
-    glContext.enable(glContext.DEPTH_TEST);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
 
-    shaderProg = initShaders(glContext, "vertex-shader", "fragment-shader");
-    glContext.useProgram(shaderProg);
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
 
-    const cubeVertices = [
-        vec4(-0.6, -0.6, -0.6, 1.0),
-        vec4(-0.6, -0.6,  0.6, 1.0),
-        vec4(-0.6,  0.6,  0.6, 1.0),
-        vec4(-0.6,  0.6, -0.6, 1.0),
-        vec4( 0.6, -0.6, -0.6, 1.0),
-        vec4( 0.6, -0.6,  0.6, 1.0),
-        vec4( 0.6,  0.6,  0.6, 1.0),
-        vec4( 0.6,  0.6, -0.6, 1.0)
+    var cube1 = [
+        vec4(-0.5, -0.5, -0.5, 1.0),
+        vec4(-0.5, -0.5,  0.5, 1.0),
+        vec4(-0.5,  0.5,  0.5, 1.0),
+        vec4(-0.5,  0.5, -0.5, 1.0),
+        vec4( 0.5, -0.5, -0.5, 1.0),
+        vec4( 0.5, -0.5,  0.5, 1.0),
+        vec4( 0.5,  0.5,  0.5, 1.0),
+        vec4( 0.5,  0.5, -0.5, 1.0)
     ];
 
-    const otherVertices = [
-        vec4(-0.3, -0.3, -0.3, 1.0),
-        vec4(-0.3, -0.3,  0.3, 1.0),
-        vec4(-0.3,  0.3,  0.3, 1.0),
-        vec4(-0.3,  0.3, -0.3, 1.0),
-        vec4( 0.3, -0.3, -0.3, 1.0),
-        vec4( 0.3, -0.3,  0.3, 1.0),
-        vec4( 0.3,  0.3,  0.3, 1.0),
-        vec4( 0.3,  0.3, -0.3, 1.0)
+    var cube2 = [
+        vec4(-0.25, -0.25, -0.25, 1.0),
+        vec4(-0.25, -0.25,  0.25, 1.0),
+        vec4(-0.25,  0.25,  0.25, 1.0),
+        vec4(-0.25,  0.25, -0.25, 1.0),
+        vec4( 0.25, -0.25, -0.25, 1.0),
+        vec4( 0.25, -0.25,  0.25, 1.0),
+        vec4( 0.25,  0.25,  0.25, 1.0),
+        vec4( 0.25,  0.25, -0.25, 1.0)
     ];
 
-    vertexBuffer1 = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(cubeVertices), glContext.STATIC_DRAW);
+    buffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube1), gl.STATIC_DRAW);
 
-    vertexBuffer2 = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(otherVertices), glContext.STATIC_DRAW);
+    buffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube2), gl.STATIC_DRAW);
 
-    const colorsForFirstShape = [
-        vec4(0.9, 0.1, 0.1, 1.0),
-        vec4(0.1, 0.9, 0.1, 1.0),
-        vec4(0.1, 0.1, 0.9, 1.0),
-        vec4(0.9, 0.9, 0.1, 1.0),
-        vec4(0.1, 0.9, 0.9, 1.0),
-        vec4(0.9, 0.1, 0.9, 1.0),
-        vec4(0.7, 0.7, 0.7, 1.0),
-        vec4(0.9, 0.5, 0.0, 1.0)
+
+    var colors1 = [
+        vec4(1.0, 0.0, 0.0, 1.0),
+        vec4(0.0, 1.0, 0.0, 1.0),
+        vec4(0.0, 0.0, 1.0, 1.0),
+        vec4(1.0, 1.0, 0.0, 1.0),
+        vec4(0.0, 1.0, 1.0, 1.0),
+        vec4(1.0, 0.0, 1.0, 1.0),
+        vec4(0.5, 0.5, 0.5, 1.0),
+        vec4(1.0, 0.5, 0.0, 1.0)
     ];
 
-    const colorsForSecondShape = [
-        vec4(0.3, 0.0, 0.0, 1.0),
-        vec4(0.0, 0.3, 0.0, 1.0),
-        vec4(0.0, 0.0, 0.3, 1.0),
-        vec4(0.3, 0.3, 0.0, 1.0),
-        vec4(0.0, 0.3, 0.3, 1.0),
-        vec4(0.3, 0.0, 0.3, 1.0),
-        vec4(0.2, 0.2, 0.2, 1.0),
-        vec4(0.3, 0.3, 0.0, 1.0)
+    var colors2 = [
+        vec4(0.5, 0.0, 0.0, 1.0),
+        vec4(0.0, 0.5, 0.0, 1.0),
+        vec4(0.0, 0.0, 0.5, 1.0),
+        vec4(0.5, 0.5, 0.0, 1.0),
+        vec4(0.0, 0.5, 0.5, 1.0),
+        vec4(0.5, 0.0, 0.5, 1.0), 
+        vec4(0.3, 0.3, 0.3, 1.0), 
+        vec4(0.5, 0.5, 0.0, 1.0)
     ];
 
-    colorBuffer1 = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForFirstShape), glContext.STATIC_DRAW);
+    buffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube1), gl.STATIC_DRAW);
 
-    colorBuffer2 = glContext.createBuffer();
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer2);
-    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForSecondShape), glContext.STATIC_DRAW);
+    buffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cube2), gl.STATIC_DRAW);
 
-    // Set up position attributes
-    const positionAttributeLocationA = gl.getAttribLocation(shaderProg, "positionA");
-    const positionAttributeLocationB = gl.getAttribLocation(shaderProg, "positionB");
+    var colorBuffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors1), gl.STATIC_DRAW);
 
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
-    glContext.vertexAttribPointer(positionAttributeLocationA, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(positionAttributeLocationA);
+    var colorBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors2), gl.STATIC_DRAW);
 
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
-    glContext.vertexAttribPointer(positionAttributeLocationB, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(positionAttributeLocationB);
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
+    var colorLoc = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
 
-    // Set up color attributes
-    const colorAttributeLocation = gl.getAttribLocation(shaderProg, "vertexColor");
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
-    glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(colorAttributeLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer2);
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
 
-    // Event listeners for buttons
-    document.getElementById('morphButton').addEventListener("click", function () {
-        morphValue = morphValue === 0.0 ? 1.0 : 0.0;
+    document.getElementById('rotateXButton').style.backgroundColor = 'red';
+    document.getElementById('rotateYButton').style.backgroundColor = 'red';
+    document.getElementById('rotateZButton').style.backgroundColor = 'red';
+
+    document.getElementById('rotateXButton').addEventListener("click", function () {
+        isRotateX = !isRotateX;
+        this.style.backgroundColor = isRotateX ? 'green' : 'red';
+    });
+    
+    document.getElementById('rotateYButton').addEventListener("click", function () {
+        isRotateY = !isRotateY;
+        this.style.backgroundColor = isRotateY ? 'green' : 'red';
+    });
+    
+    document.getElementById('rotateZButton').addEventListener("click", function () {
+        isRotateZ = !isRotateZ;
+        this.style.backgroundColor = isRotateZ ? 'green' : 'red';
+    });
+    
+
+    document.getElementById('toggle').addEventListener("click", function () {
+        if (morphing) {
+            clearInterval(intervalId);
+        } else {
+            intervalId = setInterval(() => {
+                t += direction * 0.015;
+                angleY += isRotateY ? 2 : 0; // rotation Y
+                angleX += isRotateX ? 1 : 0; // rotation X
+                angleZ += isRotateZ ? 1 : 0; // rotation Z
+                if (t >= 1.0 || t <= 0.0) {
+                    direction *= -1;
+                }
+                render();
+            }, 100);
+        }
+        morphing = !morphing;
     });
 
-    drawScene();
+    render();
 }
 
-function drawScene() {
-    glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
-    const modelViewMatrix = mat4();
-    
-    // Create rotation matrices
-    const rotationX = rotate(angleX, [1, 0, 0]);
-    const rotationY = rotate(angleY, [0, 1, 0]);
-    const rotationZ = rotate(angleZ, [0, 0, 1]);
+function render() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Update model view matrix with rotations
-    modelViewMatrix = mult(modelViewMatrix, rotationX);
-    modelViewMatrix = mult(modelViewMatrix, rotationY);
-    modelViewMatrix = mult(modelViewMatrix, rotationZ);
+    var modelViewMatrix = mat4();
+    modelViewMatrix = mult(modelViewMatrix, rotateY(angleY)); // Rotate Y
+    modelViewMatrix = mult(modelViewMatrix, rotateX(angleX)); // Rotate X
+    modelViewMatrix = mult(modelViewMatrix, rotateZ(angleZ)); // Rotate Z
 
-    const morphLocation = glContext.getUniformLocation(shaderProg, "morphFactor");
-    glContext.uniform1f(morphLocation, morphValue);
+    var modelViewLoc = gl.getUniformLocation(program, "uModelViewMatrix");
+    gl.uniformMatrix4fv(modelViewLoc, false, flatten(modelViewMatrix));
 
-    const modelViewMatrixLocation = glContext.getUniformLocation(shaderProg, "modelViewMatrix");
-    glContext.uniformMatrix4fv(modelViewMatrixLocation, false, flatten(modelViewMatrix));
+    var morphLoc = gl.getUniformLocation(program, "uMorph");
+    gl.uniform1f(morphLoc, t);
 
-    // Draw the first shape
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
-    glContext.drawArrays(glContext.TRIANGLES, 0, 36);
+    var color = vec4(1.0 * t, 0.0, 1.0 * (1.0 - t), 1.0);
+    var colorLoc = gl.getUniformLocation(program, "uColor");
+    gl.uniform4fv(colorLoc, flatten(color));
 
-    // Draw the second shape
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
-    glContext.drawArrays(glContext.TRIANGLES, 0, 36);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer1);
+    var positionLoc1 = gl.getAttribLocation(program, "aPosition1");
+    gl.vertexAttribPointer(positionLoc1, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLoc1);
 
-    requestAnimationFrame(drawScene);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer2);
+    var positionLoc2 = gl.getAttribLocation(program, "aPosition2");
+    gl.vertexAttribPointer(positionLoc2, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLoc2);
+
+    drawCube();
 }
 
+function drawCube() {
+    const indices = [
+        1, 0, 3, 1, 3, 2, // Front
+        2, 3, 7, 2, 7, 6, // Top
+        3, 0, 4, 3, 4, 7, // Left
+        6, 5, 1, 6, 1, 2, // Right
+        4, 5, 6, 4, 6, 7, // Back
+        5, 4, 0, 5, 0, 1  // Bottom
+    ];
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+}
 
