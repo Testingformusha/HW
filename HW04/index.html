@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Shape Morphing</title>
+    <title>3D Shape Morphing with WebGL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.4.0/gl-matrix.js"></script>
     <script src="https://unpkg.com/gl-utils@0.3.0/dist/gl-utils.js"></script>
     <script src="HW04.js"></script>
     <style>
-        body { display: flex; justify-content: center; align-items: center; flex-direction: column; height: 100vh; margin: 0; }
-        canvas { border: 1px solid black; }
-        button { margin: 5px; }
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #f0f0f0; 
+        }
+        canvas { border: 2px solid #333; }
+        .button-container { margin-top: 20px; }
+        button { margin: 5px; padding: 10px; }
     </style>
 </head>
 <body>
-    <canvas id="gl-canvas" width="500" height="500"></canvas>
-    <div>
-        <button id="rotateXButton">Toggle Rotate X</button>
-        <button id="rotateYButton">Toggle Rotate Y</button>
-        <button id="rotateZButton">Toggle Rotate Z</button>
-        <button id="toggle">Toggle Morph</button>
+    <canvas id="gl-canvas" width="600" height="600"></canvas>
+    <div class="button-container">
+        <button id="xRotateButton">Rotate X</button>
+        <button id="yRotateButton">Rotate Y</button>
+        <button id="zRotateButton">Rotate Z</button>
+        <button id="morphButton">Morph Shape</button>
     </div>
 
     <!-- Vertex Shader -->
@@ -27,19 +36,19 @@
         #version 300 es
         precision mediump float;
 
-        in vec4 aPosition1;
-        in vec4 aPosition2;
-        in vec4 aColor;
+        in vec4 positionA;
+        in vec4 positionB;
+        in vec4 vertexColor;
 
-        uniform float uMorph;
-        uniform mat4 uModelViewMatrix;
+        uniform float morphFactor;
+        uniform mat4 modelViewMatrix;
 
-        out vec4 vColor;
+        out vec4 fragColor;
 
         void main() {
-            vec4 finalPosition = mix(aPosition1, aPosition2, uMorph);
-            gl_Position = uModelViewMatrix * finalPosition;
-            vColor = aColor;
+            vec4 interpolatedPosition = mix(positionA, positionB, morphFactor);
+            gl_Position = modelViewMatrix * interpolatedPosition;
+            fragColor = vertexColor;
         }
     </script>
 
@@ -48,12 +57,12 @@
         #version 300 es
         precision mediump float;
 
-        in vec4 vColor;
+        in vec4 fragColor;
 
-        out vec4 fragColor;
+        out vec4 outputColor;
 
         void main() {
-            fragColor = vColor;
+            outputColor = fragColor;
         }
     </script>
 </body>
