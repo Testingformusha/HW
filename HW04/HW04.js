@@ -63,25 +63,25 @@ function init() {
 
 
     var colors1 = [
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0), // Solid Blue
-        vec4(0.0, 0.0, 1.0, 1.0)  // Solid Blue
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0),  // Red
+        vec4(1.0, 0.0, 0.0, 1.0)   // Red
     ];
 
     var colors2 = [
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0), // Solid Black
-        vec4(0.0, 0.0, 0.0, 1.0)  // Solid Black
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
+        vec4(1.0, 1.0, 0.0, 1.0)   // Yellow
     ];
 
     buffer1 = gl.createBuffer();
