@@ -3,18 +3,12 @@
 let glContext;
 let shaderProg;
 let morphValue = 0.0;
-let isAnimating = false;
-let animationInterval;
-let rotationSign = 1;
 let angleY = 0;
 let angleX = 0;
 let angleZ = 0;
 
-let isXRotating = false;
-let isYRotating = false;
-let isZRotating = false;
-
 let vertexBuffer1, vertexBuffer2;
+let colorBuffer1, colorBuffer2;
 
 init();
 
@@ -84,78 +78,69 @@ function init() {
         vec4(0.3, 0.3, 0.0, 1.0)
     ];
 
-    const colorBuffer1 = glContext.createBuffer();
+    colorBuffer1 = glContext.createBuffer();
     glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
     glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForFirstShape), glContext.STATIC_DRAW);
 
-    const colorBuffer2 = glContext.createBuffer();
+    colorBuffer2 = glContext.createBuffer();
     glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer2);
     glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForSecondShape), glContext.STATIC_DRAW);
 
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
+    // Set up position attributes
+    const positionAttributeLocationA = gl.getAttribLocation(shaderProg, "positionA");
+    const positionAttributeLocationB = gl.getAttribLocation(shaderProg, "positionB");
+
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
+    glContext.vertexAttribPointer(positionAttributeLocationA, 4, glContext.FLOAT, false, 0, 0);
+    glContext.enableVertexAttribArray(positionAttributeLocationA);
+
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
+    glContext.vertexAttribPointer(positionAttributeLocationB, 4, glContext.FLOAT, false, 0, 0);
+    glContext.enableVertexAttribArray(positionAttributeLocationB);
+
+    // Set up color attributes
     const colorAttributeLocation = gl.getAttribLocation(shaderProg, "vertexColor");
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
     glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
     glContext.enableVertexAttribArray(colorAttributeLocation);
 
-    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer2);
-    glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
-    glContext.enableVertexAttribArray(colorAttributeLocation);
-
-    setupButtonEvents();
+    // Event listeners for buttons
+    document.getElementById('morphButton').addEventListener("click", function () {
+        morphValue = morphValue === 0.0 ? 1.0 : 0.0;
+    });
 
     drawScene();
 }
 
-function setupButtonEvents() {
-    document.getElementById('xRotateButton').style.backgroundColor = 'orange';
-    document.getElementById('yRotateButton').style.backgroundColor = 'orange';
-    document.getElementById('zRotateButton').style.backgroundColor = 'orange';
-
-    document.getElementById('xRotateButton').addEventListener("click", function () {
-        isXRotating = !isXRotating;
-        this.style.backgroundColor = isXRotating ? 'lightgreen' : 'orange';
-    });
-
-    document.getElementById('yRotateButton').addEventListener("click", function () {
-        isYRotating = !isYRotating;
-        this.style.backgroundColor = isYRotating ? 'lightgreen' : 'orange';
-    });
-
-    document.getElementById('zRotateButton').addEventListener("click", function () {
-        isZRotating = !isZRotating;
-        this.style.backgroundColor = isZRotating ? 'lightgreen' : 'orange';
-    });
-
-    document.getElementById('morphButton').addEventListener("click", function () {
-        morphValue = morphValue === 0.0 ? 1.0 : 0.0;
-    });
-}
-
 function drawScene() {
     glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
-    glContext.enable(glContext.DEPTH_TEST);
-
     const modelViewMatrix = mat4();
+    
+    // Create rotation matrices
+    const rotationX = rotate(angleX, [1, 0, 0]);
+    const rotationY = rotate(angleY, [0, 1, 0]);
+    const rotationZ = rotate(angleZ, [0, 0, 1]);
 
-    if (isXRotating) angleX += 0.01 * rotationSign;
-    if (isYRotating) angleY += 0.01 * rotationSign;
-    if (isZRotating) angleZ += 0.01 * rotationSign;
-
-    modelViewMatrix = mult(modelViewMatrix, rotate(angleX, [1, 0, 0]));
-    modelViewMatrix = mult(modelViewMatrix, rotate(angleY, [0, 1, 0]));
-    modelViewMatrix = mult(modelViewMatrix, rotate(angleZ, [0, 0, 1]));
+    // Update model view matrix with rotations
+    modelViewMatrix = mult(modelViewMatrix, rotationX);
+    modelViewMatrix = mult(modelViewMatrix, rotationY);
+    modelViewMatrix = mult(modelViewMatrix, rotationZ);
 
     const morphLocation = glContext.getUniformLocation(shaderProg, "morphFactor");
     glContext.uniform1f(morphLocation, morphValue);
+
     const modelViewMatrixLocation = glContext.getUniformLocation(shaderProg, "modelViewMatrix");
     glContext.uniformMatrix4fv(modelViewMatrixLocation, false, flatten(modelViewMatrix));
 
-    // Draw the shapes
+    // Draw the first shape
     glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
     glContext.drawArrays(glContext.TRIANGLES, 0, 36);
+
+    // Draw the second shape
     glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
     glContext.drawArrays(glContext.TRIANGLES, 0, 36);
 
     requestAnimationFrame(drawScene);
 }
+
 
