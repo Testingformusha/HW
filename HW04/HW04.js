@@ -111,17 +111,14 @@ function init() {
 
     document.getElementById('rotateXButton').addEventListener("click", function () {
         isRotateX = !isRotateX;
-        this.style.backgroundColor = isRotateX ? 'blue' : 'red';
     });
     
     document.getElementById('rotateYButton').addEventListener("click", function () {
         isRotateY = !isRotateY;
-        this.style.backgroundColor = isRotateY ? 'blue' : 'red';
     });
     
     document.getElementById('rotateZButton').addEventListener("click", function () {
         isRotateZ = !isRotateZ;
-        this.style.backgroundColor = isRotateZ ? 'blue' : 'red';
     });
     
 
@@ -131,9 +128,9 @@ function init() {
         } else {
             intervalId = setInterval(() => {
                 t += direction * 0.015;
-                angleY += isRotateY ? 2 : 0; // rotation Y
-                angleX += isRotateX ? 1 : 0; // rotation X
-                angleZ += isRotateZ ? 1 : 0; // rotation Z
+                angleY += isRotateY ? 2 : 0;
+                angleX += isRotateX ? 1 : 0;
+                angleZ += isRotateZ ? 1 : 0;
                 if (t >= 1.0 || t <= 0.0) {
                     direction *= -1;
                 }
@@ -150,9 +147,9 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     var modelViewMatrix = mat4();
-    modelViewMatrix = mult(modelViewMatrix, rotateY(angleY)); // Rotate Y
-    modelViewMatrix = mult(modelViewMatrix, rotateX(angleX)); // Rotate X
-    modelViewMatrix = mult(modelViewMatrix, rotateZ(angleZ)); // Rotate Z
+    modelViewMatrix = mult(modelViewMatrix, rotateY(angleY));
+    modelViewMatrix = mult(modelViewMatrix, rotateX(angleX));
+    modelViewMatrix = mult(modelViewMatrix, rotateZ(angleZ));
 
     var modelViewLoc = gl.getUniformLocation(program, "uModelViewMatrix");
     gl.uniformMatrix4fv(modelViewLoc, false, flatten(modelViewMatrix));
