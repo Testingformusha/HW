@@ -1,38 +1,38 @@
 "use strict";
 
-let gl;
-let shaderProgram;
-let morphFactor = 0.0;
-let isMorphing = false;
-let morphInterval;
-let rotationDirection = 1;
-let rotateY = 0;
-let rotateX = 0;
-let rotateZ = 0;
+let glContext;
+let shaderProg;
+let morphValue = 0.0;
+let isAnimating = false;
+let animationInterval;
+let rotationSign = 1;
+let angleY = 0;
+let angleX = 0;
+let angleZ = 0;
 
-let rotateXEnabled = false;
-let rotateYEnabled = false;
-let rotateZEnabled = false;
+let isXRotating = false;
+let isYRotating = false;
+let isZRotating = false;
 
-let vertexBufferA, vertexBufferB;
+let vertexBuffer1, vertexBuffer2;
 
-initialize();
+init();
 
-function initialize() {
-    const canvas = document.getElementById("gl-canvas");
-    gl = canvas.getContext('webgl2');
-    if (!gl) {
-        alert("WebGL isn't available");
+function init() {
+    const canvasElement = document.getElementById("gl-canvas");
+    glContext = canvasElement.getContext('webgl2');
+    if (!glContext) {
+        alert("Unable to initialize WebGL");
         return;
     }
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.8, 0.8, 0.8, 1.0);
-    gl.enable(gl.DEPTH_TEST);
+    glContext.viewport(0, 0, canvasElement.width, canvasElement.height);
+    glContext.clearColor(0.8, 0.8, 0.8, 1.0);
+    glContext.enable(glContext.DEPTH_TEST);
 
-    shaderProgram = initShaders(gl, "vertex-shader", "fragment-shader");
-    gl.useProgram(shaderProgram);
+    shaderProg = initShaders(glContext, "vertex-shader", "fragment-shader");
+    glContext.useProgram(shaderProg);
 
-    const shapeA = [
+    const cubeVertices = [
         vec4(-0.6, -0.6, -0.6, 1.0),
         vec4(-0.6, -0.6,  0.6, 1.0),
         vec4(-0.6,  0.6,  0.6, 1.0),
@@ -43,7 +43,7 @@ function initialize() {
         vec4( 0.6,  0.6, -0.6, 1.0)
     ];
 
-    const shapeB = [
+    const otherVertices = [
         vec4(-0.3, -0.3, -0.3, 1.0),
         vec4(-0.3, -0.3,  0.3, 1.0),
         vec4(-0.3,  0.3,  0.3, 1.0),
@@ -54,15 +54,15 @@ function initialize() {
         vec4( 0.3,  0.3, -0.3, 1.0)
     ];
 
-    vertexBufferA = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferA);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(shapeA), gl.STATIC_DRAW);
+    vertexBuffer1 = glContext.createBuffer();
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
+    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(cubeVertices), glContext.STATIC_DRAW);
 
-    vertexBufferB = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferB);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(shapeB), gl.STATIC_DRAW);
+    vertexBuffer2 = glContext.createBuffer();
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
+    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(otherVertices), glContext.STATIC_DRAW);
 
-    const colorArrayA = [
+    const colorsForFirstShape = [
         vec4(0.9, 0.1, 0.1, 1.0),
         vec4(0.1, 0.9, 0.1, 1.0),
         vec4(0.1, 0.1, 0.9, 1.0),
@@ -73,7 +73,7 @@ function initialize() {
         vec4(0.9, 0.5, 0.0, 1.0)
     ];
 
-    const colorArrayB = [
+    const colorsForSecondShape = [
         vec4(0.3, 0.0, 0.0, 1.0),
         vec4(0.0, 0.3, 0.0, 1.0),
         vec4(0.0, 0.0, 0.3, 1.0),
@@ -84,96 +84,78 @@ function initialize() {
         vec4(0.3, 0.3, 0.0, 1.0)
     ];
 
-    const colorBufferA = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferA);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorArrayA), gl.STATIC_DRAW);
+    const colorBuffer1 = glContext.createBuffer();
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
+    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForFirstShape), glContext.STATIC_DRAW);
 
-    const colorBufferB = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferB);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorArrayB), gl.STATIC_DRAW);
+    const colorBuffer2 = glContext.createBuffer();
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer2);
+    glContext.bufferData(glContext.ARRAY_BUFFER, flatten(colorsForSecondShape), glContext.STATIC_DRAW);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferA);
-    const colorLocation = gl.getAttribLocation(shaderProgram, "aColor");
-    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(colorLocation);
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer1);
+    const colorAttributeLocation = gl.getAttribLocation(shaderProg, "vertexColor");
+    glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
+    glContext.enableVertexAttribArray(colorAttributeLocation);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferB);
-    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(colorLocation);
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, colorBuffer2);
+    glContext.vertexAttribPointer(colorAttributeLocation, 4, glContext.FLOAT, false, 0, 0);
+    glContext.enableVertexAttribArray(colorAttributeLocation);
 
-    initializeButtonHandlers();
+    setupButtonEvents();
 
-    render();
+    drawScene();
 }
 
-function initializeButtonHandlers() {
-    document.getElementById('rotateXButton').style.backgroundColor = 'orange';
-    document.getElementById('rotateYButton').style.backgroundColor = 'orange';
-    document.getElementById('rotateZButton').style.backgroundColor = 'orange';
+function setupButtonEvents() {
+    document.getElementById('xRotateButton').style.backgroundColor = 'orange';
+    document.getElementById('yRotateButton').style.backgroundColor = 'orange';
+    document.getElementById('zRotateButton').style.backgroundColor = 'orange';
 
-    document.getElementById('rotateXButton').addEventListener("click", function () {
-        rotateXEnabled = !rotateXEnabled;
-        this.style.backgroundColor = rotateXEnabled ? 'lightgreen' : 'orange';
+    document.getElementById('xRotateButton').addEventListener("click", function () {
+        isXRotating = !isXRotating;
+        this.style.backgroundColor = isXRotating ? 'lightgreen' : 'orange';
     });
 
-    document.getElementById('rotateYButton').addEventListener("click", function () {
-        rotateYEnabled = !rotateYEnabled;
-        this.style.backgroundColor = rotateYEnabled ? 'lightgreen' : 'orange';
+    document.getElementById('yRotateButton').addEventListener("click", function () {
+        isYRotating = !isYRotating;
+        this.style.backgroundColor = isYRotating ? 'lightgreen' : 'orange';
     });
 
-    document.getElementById('rotateZButton').addEventListener("click", function () {
-        rotateZEnabled = !rotateZEnabled;
-        this.style.backgroundColor = rotateZEnabled ? 'lightgreen' : 'orange';
+    document.getElementById('zRotateButton').addEventListener("click", function () {
+        isZRotating = !isZRotating;
+        this.style.backgroundColor = isZRotating ? 'lightgreen' : 'orange';
     });
 
-    document.getElementById('toggle').addEventListener("click", function () {
-        if (isMorphing) {
-            clearInterval(morphInterval);
-        } else {
-            morphInterval = setInterval(() => {
-                morphFactor += rotationDirection * 0.02;
-                rotateY += rotateYEnabled ? 2 : 0; // rotation Y
-                rotateX += rotateXEnabled ? 1 : 0; // rotation X
-                rotateZ += rotateZEnabled ? 1 : 0; // rotation Z
-
-                if (morphFactor >= 1.0 || morphFactor <= 0.0) {
-                    rotationDirection *= -1;
-                }
-                render();
-            }, 100);
-        }
-        isMorphing = !isMorphing;
+    document.getElementById('morphButton').addEventListener("click", function () {
+        morphValue = morphValue === 0.0 ? 1.0 : 0.0;
     });
 }
 
-function render() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+function drawScene() {
+    glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
+    glContext.enable(glContext.DEPTH_TEST);
 
-    let modelViewMatrix = mat4();
-    modelViewMatrix = mult(modelViewMatrix, rotateY(rotateY)); // Rotate Y
-    modelViewMatrix = mult(modelViewMatrix, rotateX(rotateX)); // Rotate X
-    modelViewMatrix = mult(modelViewMatrix, rotateZ(rotateZ)); // Rotate Z
+    const modelViewMatrix = mat4();
 
-    const modelViewLocation = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
-    gl.uniformMatrix4fv(modelViewLocation, false, flatten(modelViewMatrix));
+    if (isXRotating) angleX += 0.01 * rotationSign;
+    if (isYRotating) angleY += 0.01 * rotationSign;
+    if (isZRotating) angleZ += 0.01 * rotationSign;
 
-    const morphLocation = gl.getUniformLocation(shaderProgram, "uMorph");
-    gl.uniform1f(morphLocation, morphFactor);
+    modelViewMatrix = mult(modelViewMatrix, rotate(angleX, [1, 0, 0]));
+    modelViewMatrix = mult(modelViewMatrix, rotate(angleY, [0, 1, 0]));
+    modelViewMatrix = mult(modelViewMatrix, rotate(angleZ, [0, 0, 1]));
 
-    const colorBlend = vec4(1.0 * morphFactor, 0.0, 1.0 * (1.0 - morphFactor), 1.0);
-    const colorUniformLocation = gl.getUniformLocation(shaderProgram, "uColor");
-    gl.uniform4fv(colorUniformLocation, flatten(colorBlend));
+    const morphLocation = glContext.getUniformLocation(shaderProg, "morphFactor");
+    glContext.uniform1f(morphLocation, morphValue);
+    const modelViewMatrixLocation = glContext.getUniformLocation(shaderProg, "modelViewMatrix");
+    glContext.uniformMatrix4fv(modelViewMatrixLocation, false, flatten(modelViewMatrix));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferA);
-    const positionLocationA = gl.getAttribLocation(shaderProgram, "aPosition1");
-    gl.vertexAttribPointer(positionLocationA, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(positionLocationA);
+    // Draw the shapes
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer1);
+    glContext.drawArrays(glContext.TRIANGLES, 0, 36);
+    glContext.bindBuffer(glContext.ARRAY_BUFFER, vertexBuffer2);
+    glContext.drawArrays(glContext.TRIANGLES, 0, 36);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferB);
-    const positionLocationB = gl.getAttribLocation(shaderProgram, "aPosition2");
-    gl.vertexAttribPointer(positionLocationB, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(positionLocationB);
-
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
-    requestAnimationFrame(render);
+    requestAnimationFrame(drawScene);
 }
+
